@@ -1,0 +1,236 @@
+# OpenAPI version identifier - required for OpenAPI 3.0 domains
+openapi: 3.0.0
+
+#######################
+# Optional info section
+#######################
+info:
+  title: Domain Components of Orders API
+  description: All Common Domain Components that makes the Request, Domain and Response models.
+  version: '1.0.0'
+
+components:
+
+  ####################
+  # Common data models
+  ####################
+  schemas:
+    ErrorModel:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+#
+# Defining Bad Request 400 Model
+#
+    BadRequestMadeModel:
+      type: object
+      properties:
+        domainDocs:
+          type: string
+          format: uri
+          example: https://app.swaggerhub.com/domains/VinodhThiagarajan1309/just-orders/1.0.0
+      allOf:
+        - $ref: '#/components/schemas/ErrorModel'
+    
+
+#
+# Defining the New Item Request Object
+#
+    NewItemRequest:
+      type: object
+      description: 'A Request to Create a Food Item in the system.'
+      properties:
+        itemName:
+          type: string
+          minLength: 1
+          description: Name of the Food item.
+          example: Diet Coke
+        itemPrice:
+          type: string
+          format: currency
+          description: Price of the item.
+          minimum: 0.01
+          maximum: 10.00
+          example: 2.99
+      required:
+        - itemName
+        - itemPrice
+#
+# Defining the Item Object using Composition
+#
+    Item:
+      type: object
+      description: 'Item Defines a Food Item, the price of the item and its unique Id'
+      title: Item
+      properties:
+        itemId:
+          type: string
+          minLength: 1
+          description: This is the Unique Identifier for a Item Sold
+          format: uuid
+          example: 907ca62f-33e0-46fd-aebb-5eb59a2bc379
+      allOf:
+        - $ref: '#/components/schemas/NewItemRequest'
+      required:
+        - itemId
+
+#
+# Defining New Order Request using composition.
+# This can be just Item Ids and Quantity.
+# We are not doing serious wiring yet. Just a demo
+#
+    LineItem:
+      type: object
+      description: List of Items that makes this order and their quantities.
+      properties:
+        itemId:
+          description: The Id of the item in the order
+          type: string
+          format: uuid
+          example: a72419bc-0991-456b-90e2-af648bfeb37c
+        itemPrice:
+          description: The price of single line item.
+          type: number
+          format: currency
+          example: 2.99
+        quantity:
+         description: The number of items of this kind
+         type: number
+         minimum: 1
+         maximum: 10
+         example: 4
+        
+      
+#
+# Defining New Order Request using composition.
+# This can be just Item Ids and Quantity.
+# We are not doing serious wiring yet. Just a demo
+#
+    NewOrderRequest:
+      type: array
+      items:
+        $ref: '#/components/schemas/LineItem'
+      description: List of Items that makes this order.
+
+#
+# Defining an Order Object using Composition
+#
+    Order:
+      type: object
+      description: 'An Order is created with unique Id, subtotal, tax and Grand Total along with the items that were added.'
+      title: Order
+      maxProperties: 1
+      additionalProperties: false
+      properties:
+        orderId:
+          type: string
+          description: Identifier of the Placed order
+          format: uuid
+          example: 02e4d444-1997-49e7-b287-a496c41d73d6
+        lineItems:
+          type: array
+          uniqueItems: true
+          minItems: 1
+          description: List of Items submitted in this Order
+          items:
+            $ref: '#/components/schemas/LineItem'
+        orderSubTotal:
+          type: number
+          description: Total of the Items without Tax
+          format: currency
+          example: 12.88
+        salesTax:
+          type: number
+          format: currency
+          description: Sales Tax for this order
+          example: 0.65
+        total:
+          type: number
+          description: Order Total including Tax
+          format: currency
+          example: 13.53
+      required:
+        - orderId
+        - lineItems
+        - orderSubTotal
+        - salesTax
+        - total
+
+  ####################
+  # Common parameters
+  ####################
+  parameters:
+    offsetParam:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+      description: The number of items to skip before returning the results
+    limitParam:
+      in: query
+      name: limit
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: The number of items to return
+
+  ####################
+  # Common responses
+  ####################
+  responses:
+    GeneralError:
+      description: An error occurred
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorModel'
+      headers:
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/X-RateLimit-Remaining'
+    BadRequestMadeError:
+      description: An error occurred
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BadRequestMadeModel'
+
+  #########################
+  # Common headers
+  # (except request headers - they are defined as parameters)
+  #########################
+  headers:
+    X-RateLimit-Limit:
+      description: Request limit per hour
+      schema:
+        type: integer
+      example: 100
+    X-RateLimit-Remaining:
+      description: Remaining requests for the hour
+      schema:
+        type: integer
+      example: 94
+
+  #########################
+  # Common link definitions
+  # See: https://swagger.io/docs/specification/links/
+  #########################
+  links: {}
+
+  #########################
+  # Common callback definitions
+  # See: https://swagger.io/docs/specification/callbacks/
+  #########################
+  callbacks: {}
